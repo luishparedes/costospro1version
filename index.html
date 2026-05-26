@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Master Costos VZLA Pro - Acceso Seguro</title>
+    <style>
+        :root {
+            --primary: #2563eb; --success: #059669; --warning: #d97706; --danger: #ef4444;
+            --bg: #f1f5f9; --card: #ffffff; --text: #1e293b; --copy: #0ea5e9; --binance: #F3BA2F;
+        }
+        body { font-family: -apple-system, sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 15px; padding-bottom: 60px; }
+        .container { max-width: 500px; margin: auto; }
+        .card { background: var(--card); padding: 18px; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); margin-bottom: 15px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .input-group { margin-bottom: 12px; }
+        label { display: block; font-size: 0.75rem; margin-bottom: 4px; font-weight: 700; color: #64748b; }
+        input { width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 10px; box-sizing: border-box; font-size: 1rem; }
+        .btn { width: 100%; padding: 14px; border-radius: 10px; font-weight: bold; cursor: pointer; border: none; display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 5px; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-update { background: var(--success); color: white; box-shadow: 0 4px 10px rgba(5, 150, 105, 0.3); }
+        .btn-catalogo { background: #1e293b; color: white; margin-bottom: 15px; border: 2px solid var(--binance); }
+        .btn-backup { background: #64748b; color: white; font-size: 0.8rem; padding: 8px; }
+        
+        .brecha-box { background: #fffbeb; border: 1px solid #fef3c7; padding: 12px; border-radius: 10px; margin-top: 10px; border-left: 4px solid var(--warning); }
+        .brecha-percent { color: #92400e; font-weight: 800; font-size: 1.1rem; }
+        .brecha-warning { background: #fee2e2; border-left-color: var(--danger); margin-top: 8px; font-size: 0.7rem; color: #991b1b; }
+        
+        .product-item { background: white; padding: 16px; border-radius: 14px; margin-bottom: 10px; border-left: 6px solid var(--primary); box-shadow: 0 2px 4px rgba(0,0,0,0.05); position: relative; }
+        .binance-badge { position: absolute; top: 15px; right: 15px; background: #fff9e6; color: #d97706; padding: 4px 8px; border-radius: 8px; font-size: 0.7rem; font-weight: 800; display: flex; align-items: center; gap: 4px; border: 1px solid #f3ba2f; }
+        .price-tag { font-size: 1.5rem; font-weight: 800; color: var(--success); }
+        .actions { display: flex; gap: 8px; margin-top: 10px; }
+        .btn-sm { flex: 1; padding: 10px; font-size: 0.75rem; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; }
+        
+        .search-container { margin-bottom: 15px; position: sticky; top: 5px; z-index: 100; background: transparent; }
+        .search-wrapper { background: var(--card); border-radius: 50px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); display: flex; align-items: center; padding: 4px 16px; transition: all 0.2s ease; border: 1px solid #e2e8f0; }
+        .search-wrapper:focus-within { border-color: var(--primary); box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2); transform: scale(1.01); }
+        .search-icon { color: #94a3b8; font-size: 1.2rem; margin-right: 8px; font-weight: normal; }
+        #searchInput { border: none; padding: 12px 0; font-size: 0.95rem; background: transparent; width: 100%; outline: none; }
+        #searchInput::placeholder { color: #cbd5e1; font-weight: 400; }
+        .clear-search { background: none; border: none; color: #94a3b8; cursor: pointer; font-size: 1.2rem; padding: 8px; border-radius: 50%; display: none; align-items: center; justify-content: center; width: 28px; height: 28px; }
+        .clear-search:hover { background: #f1f5f9; }
+        .search-stats { font-size: 0.7rem; color: #64748b; margin-top: 6px; margin-left: 12px; display: none; }
+        .search-stats.active { display: block; }
+        .no-results { text-align: center; padding: 30px 20px; background: var(--card); border-radius: 16px; color: #94a3b8; }
+        
+        #toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-100px); background: #1e293b; color: white; padding: 10px 20px; border-radius: 30px; transition: 0.4s; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+        #toast.show { transform: translateX(-50%) translateY(0); }
+        
+        .alert-min-brecha { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #ef4444; color: white; padding: 12px 20px; border-radius: 12px; font-size: 0.8rem; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.2); display: none; align-items: center; gap: 8px; max-width: 90%; text-align: center; }
+        .alert-min-brecha.show { display: flex; }
+
+        /* Pantalla de acceso */
+        .access-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); z-index: 2000; display: flex; align-items: center; justify-content: center; flex-direction: column; padding: 20px; box-sizing: border-box; }
+        .access-card { background: var(--card); border-radius: 32px; padding: 32px 24px; max-width: 340px; width: 100%; text-align: center; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); }
+        .access-logo { font-size: 48px; margin-bottom: 16px; }
+        .access-title { font-size: 1.5rem; font-weight: 800; margin-bottom: 8px; background: linear-gradient(135deg, var(--primary), var(--success)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+        .access-input { width: 100%; padding: 14px; font-size: 1.2rem; text-align: center; letter-spacing: 4px; font-weight: bold; border-radius: 60px; border: 2px solid #e2e8f0; margin: 20px 0; box-sizing: border-box; text-transform: uppercase; }
+        .access-btn { background: var(--primary); color: white; border: none; padding: 14px; width: 100%; border-radius: 60px; font-weight: bold; font-size: 1rem; cursor: pointer; transition: 0.2s; }
+        .access-btn:active { transform: scale(0.97); }
+        .error-msg { color: var(--danger); font-size: 0.85rem; margin-top: 12px; min-height: 40px; font-weight: 500; }
+        .blocked-msg { color: #991b1b; background: #fee2e2; padding: 8px; border-radius: 12px; font-size: 0.8rem; margin-top: 12px; }
+        .footer-note { font-size: 0.65rem; color: #64748b; margin-top: 20px; }
+    </style>
+</head>
+<body>
+
+<div id="toast">✅ Acción realizada</div>
+<div id="alertMinBrecha" class="alert-min-brecha">⚠️ La brecha está por debajo del 30% - Se usará 30% como mínimo</div>
+
+<!-- Pantalla de acceso obligatoria -->
+<div id="accessOverlay" class="access-overlay">
+    <div class="access-card">
+        <div class="access-logo">🔐</div>
+        <div class="access-title">Master Costos Pro</div>
+        <div style="font-size: 0.8rem; color: #475569; margin-bottom: 12px;">Ingrese su código de acceso personal</div>
+        <input type="text" id="accessCodeInput" class="access-input" placeholder="Ej: ASD4" maxlength="4" autocomplete="off" inputmode="text">
+        <button id="accessBtn" class="access-btn">🔓 Verificar Acceso</button>
+        <div id="accessError" class="error-msg"></div>
+        <div class="footer-note">⚠️ Código personal e intransferible - Un solo dispositivo por código</div>
+    </div>
+</div>
+
+<div id="mainApp" style="display: none;">
+<div class="container">
+    <div class="card">
+        <h2 style="margin:0 0 10px 0; font-size: 1rem;">📈 Tasas de Cambio</h2>
+        <div class="grid">
+            <div class="input-group"><label>BCV (Bs)</label><input type="number" id="tasaBCV" step="0.01"></div>
+            <div class="input-group"><label>USDT (Bs)</label><input type="number" id="tasaUSDT" step="0.01"></div>
+        </div>
+        
+        <div class="brecha-box">
+            <div style="font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;">Brecha Cambiaria Actual</div>
+            <div id="displayBrecha" class="brecha-percent">0.00%</div>
+            <div id="brechaAdvertencia" class="brecha-warning" style="display:none;">⚠️ Brecha por debajo del 30% - Se aplicará 30% mínimo</div>
+            <div style="font-size: 0.75rem; color: #92400e;">⚠️ Los cambios solo se aplican al pulsar el botón verde.</div>
+        </div>
+        
+        <button class="btn btn-update" style="margin-top:15px" onclick="confirmarTasas()">🔄 ACTUALIZAR CÁLCULOS</button>
+    </div>
+
+    <button class="btn btn-catalogo" onclick="copiarCatalogo()">
+        📋 COPIAR CATÁLOGO DE PRECIOS
+    </button>
+
+    <div class="grid" style="margin-bottom: 15px;">
+        <button class="btn btn-backup" onclick="descargarBackup()">📥 Bajar Respaldo</button>
+        <button class="btn btn-backup" onclick="document.getElementById('fileInput').click()">📤 Subir Respaldo</button>
+        <input type="file" id="fileInput" style="display:none" onchange="subirBackup(event)">
+    </div>
+
+    <div class="card">
+        <h2 id="formTitle" style="margin:0 0 10px 0; font-size: 1rem;">📦 Gestionar Producto</h2>
+        <input type="hidden" id="editId">
+        <input type="text" id="pNombre" placeholder="Nombre del producto" style="margin-bottom:10px">
+        <div class="grid">
+            <div class="input-group"><label>Costo (USD)</label><input type="number" id="pCosto" step="0.01"></div>
+            <div class="input-group"><label>Ganancia (USD)</label><input type="number" id="pGanancia" step="0.01"></div>
+        </div>
+        <button class="btn btn-primary" id="btnGuardar" onclick="guardarProducto()">💾 Guardar Producto</button>
+        <button id="btnCancel" onclick="limpiarForm()" style="display:none; width:100%; border:none; background:none; color:red; margin-top:10px; font-size:0.8rem">Cancelar Edición</button>
+    </div>
+
+    <div class="search-container">
+        <div class="search-wrapper">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="searchInput" placeholder="Buscar producto... (nombre)" autocomplete="off">
+            <button class="clear-search" id="clearSearchBtn" onclick="clearSearch()">✕</button>
+        </div>
+        <div class="search-stats" id="searchStats">
+            <span id="resultsCount">0</span> producto(s) encontrado(s)
+        </div>
+    </div>
+
+    <div id="listaProductos"></div>
+</div>
+</div>
+
+<script>
+    // ============================================================
+    // GESTIÓN DE CÓDIGOS AUTORIZADOS (ADMINISTRABLE EN LOCALSTORAGE)
+    // ============================================================
+    // Códigos por defecto (se cargan si no existen en localStorage)
+    const DEFAULT_CODES = ["ASD4", "RTY7", "LMN2", "QWE5", "ZXC8", "BNM3", "FGH6", "JKL9", "VBN1", "MNB2"];
+    
+    function getAuthorizedCodes() {
+        const storedCodes = localStorage.getItem('admin_codes');
+        if (storedCodes) {
+            try {
+                const parsed = JSON.parse(storedCodes);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                    return parsed;
+                } else {
+                    // Si el array está vacío o es inválido, retornamos los de defecto
+                    localStorage.setItem('admin_codes', JSON.stringify(DEFAULT_CODES));
+                    return DEFAULT_CODES;
+                }
+            } catch(e) {
+                localStorage.setItem('admin_codes', JSON.stringify(DEFAULT_CODES));
+                return DEFAULT_CODES;
+            }
+        } else {
+            localStorage.setItem('admin_codes', JSON.stringify(DEFAULT_CODES));
+            return DEFAULT_CODES;
+        }
+    }
+    
+    function saveAuthorizedCodes(codes) {
+        localStorage.setItem('admin_codes', JSON.stringify(codes));
+    }
+    
+    // Nota: Como administrador, para eliminar un código, puedes hacer desde la consola:
+    // let codes = JSON.parse(localStorage.getItem('admin_codes'));
+    // let newCodes = codes.filter(c => c !== "CODIGO_A_ELIMINAR");
+    // localStorage.setItem('admin_codes', JSON.stringify(newCodes));
+    // Esto invalidará inmediatamente ese código para futuros accesos.
+    
+    // ============================================================
+    // SISTEMA DE ACCESO SEGURO CON CIERRE POR INACTIVIDAD
+    // ============================================================
+    const STORAGE_BLOCKED = "access_blocked_until";
+    const STORAGE_FAILS = "access_fail_count";
+    const STORAGE_AUTH_DEVICE = "auth_device_fingerprint";
+    const STORAGE_AUTH_CODE = "auth_code_used";
+    let inactivityTimer = null;
+    const INACTIVITY_LIMIT = 5 * 60 * 1000; // 5 minutos
+    
+    function resetInactivityTimer() {
+        if (inactivityTimer) {
+            clearTimeout(inactivityTimer);
+        }
+        // Solo reiniciamos el timer si la aplicación principal está visible
+        const mainApp = document.getElementById('mainApp');
+        if (mainApp && mainApp.style.display === 'block') {
+            inactivityTimer = setTimeout(closeSessionByInactivity, INACTIVITY_LIMIT);
+        }
+    }
+    
+    function closeSessionByInactivity() {
+        // Limpiar datos de sesión local (pero no el código recordado para la próxima)
+        // Esto fuerza a volver a la pantalla de acceso
+        const accessOverlay = document.getElementById('accessOverlay');
+        const mainApp = document.getElementById('mainApp');
+        if (mainApp && mainApp.style.display === 'block') {
+            // No eliminamos el código de localStorage, así se recuerda
+            // Solo ocultamos la app y mostramos el overlay de acceso
+            mainApp.style.display = 'none';
+            accessOverlay.style.display = 'flex';
+            // Limpiamos errores y habilitamos inputs
+            const errorDiv = document.getElementById('accessError');
+            if (errorDiv) errorDiv.innerHTML = '';
+            const accessBtn = document.getElementById('accessBtn');
+            const codeInput = document.getElementById('accessCodeInput');
+            if (accessBtn) accessBtn.disabled = false;
+            if (codeInput) {
+                codeInput.disabled = false;
+                // Precargamos el código guardado si existe
+                const savedUserCode = localStorage.getItem(STORAGE_AUTH_CODE);
+                if (savedUserCode) {
+                    codeInput.value = savedUserCode;
+                } else {
+                    codeInput.value = '';
+                }
+                codeInput.focus();
+            }
+            toast("⏰ Sesión cerrada por inactividad de 5 minutos. Vuelve a ingresar.");
+        }
+        if (inactivityTimer) clearTimeout(inactivityTimer);
+    }
+    
+    function setupActivityListeners() {
+        const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
+        events.forEach(event => {
+            document.addEventListener(event, resetInactivityTimer);
+        });
+        resetInactivityTimer();
+    }
+    
+    function getDeviceFingerprint() {
+        let screenData = `${window.screen.width}x${window.screen.height}x${window.screen.colorDepth}`;
+        let timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        let lang = navigator.language;
+        let platform = navigator.platform;
+        let core = `${screenData}|${timezone}|${lang}|${platform}`;
+        let hash = 0;
+        for (let i = 0; i < core.length; i++) {
+            hash = ((hash << 5) - hash) + core.charCodeAt(i);
+            hash |= 0;
+        }
+        return Math.abs(hash).toString(16);
+    }
+    
+    function isBlocked() {
+        const blockedUntil = localStorage.getItem(STORAGE_BLOCKED);
+        if (blockedUntil) {
+            const until = parseInt(blockedUntil);
+            if (Date.now() < until) {
+                return Math.ceil((until - Date.now()) / 60000);
+            } else {
+                localStorage.removeItem(STORAGE_BLOCKED);
+                localStorage.removeItem(STORAGE_FAILS);
+            }
+        }
+        return false;
+    }
+    
+    function registerFailedAttempt() {
+        let fails = parseInt(localStorage.getItem(STORAGE_FAILS)) || 0;
+        fails++;
+        localStorage.setItem(STORAGE_FAILS, fails);
+        if (fails >= 5) {
+            const blockTime = Date.now() + (30 * 60 * 1000);
+            localStorage.setItem(STORAGE_BLOCKED, blockTime);
+            localStorage.removeItem(STORAGE_FAILS);
+            return true;
+        }
+        return false;
+    }
+    
+    function resetFails() {
+        localStorage.removeItem(STORAGE_FAILS);
+        localStorage.removeItem(STORAGE_BLOCKED);
+    }
+    
+    function isDeviceAlreadyAuthorized() {
+        const savedFinger = localStorage.getItem(STORAGE_AUTH_DEVICE);
+        const savedCode = localStorage.getItem(STORAGE_AUTH_CODE);
+        const currentFinger = getDeviceFingerprint();
+        if (savedFinger && savedCode && savedFinger === currentFinger) {
+            // Verificar que el código aún esté en la lista autorizada (admin puede haberlo eliminado)
+            const authorizedCodes = getAuthorizedCodes();
+            if (authorizedCodes.includes(savedCode)) {
+                return true;
+            } else {
+                // El código ya no es válido, limpiar sesión
+                localStorage.removeItem(STORAGE_AUTH_DEVICE);
+                localStorage.removeItem(STORAGE_AUTH_CODE);
+                return false;
+            }
+        }
+        return false;
+    }
+    
+    function validarCodigo(code) {
+        if (!code || typeof code !== 'string') return false;
+        const upperCode = code.toUpperCase().trim();
+        const authorizedCodes = getAuthorizedCodes();
+        return authorizedCodes.includes(upperCode);
+    }
+    
+    function autenticarCliente(codeInput) {
+        const code = codeInput.toUpperCase().trim();
+        
+        if (!validarCodigo(code)) {
+            const blockedNow = registerFailedAttempt();
+            const mins = isBlocked();
+            if (mins) {
+                document.getElementById('accessError').innerHTML = `<div class="blocked-msg">🔒 DEMASIADOS INTENTOS FALLIDOS. CUENTA BLOQUEADA POR ${mins} MINUTOS.</div>`;
+                document.getElementById('accessBtn').disabled = true;
+                document.getElementById('accessCodeInput').disabled = true;
+            } else {
+                const fails = parseInt(localStorage.getItem(STORAGE_FAILS)) || 0;
+                const intentosRestantes = 5 - fails;
+                document.getElementById('accessError').innerHTML = `❌ CÓDIGO INCORRECTO. Intentos restantes: ${intentosRestantes}`;
+            }
+            return false;
+        }
+        
+        const currentFinger = getDeviceFingerprint();
+        const savedFinger = localStorage.getItem(STORAGE_AUTH_DEVICE);
+        const savedCode = localStorage.getItem(STORAGE_AUTH_CODE);
+        
+        if (savedFinger && savedCode && savedFinger !== currentFinger) {
+            document.getElementById('accessError').innerHTML = `❌ ACCESO DENEGADO: Este código ya está vinculado a otro dispositivo.`;
+            return false;
+        }
+        
+        if (savedCode && savedCode !== code) {
+            document.getElementById('accessError').innerHTML = `❌ Este dispositivo ya fue registrado con otro código.`;
+            return false;
+        }
+        
+        localStorage.setItem(STORAGE_AUTH_DEVICE, currentFinger);
+        localStorage.setItem(STORAGE_AUTH_CODE, code);
+        resetFails();
+        return true;
+    }
+    
+    function initAccessControl() {
+        const accessOverlay = document.getElementById('accessOverlay');
+        const mainApp = document.getElementById('mainApp');
+        const accessBtn = document.getElementById('accessBtn');
+        const codeInput = document.getElementById('accessCodeInput');
+        
+        // Precargar código si ya existe una sesión previa o código recordado
+        const savedUserCode = localStorage.getItem(STORAGE_AUTH_CODE);
+        if (savedUserCode) {
+            codeInput.value = savedUserCode;
+        }
+        
+        codeInput.addEventListener('input', function(e) {
+            this.value = this.value.toUpperCase().slice(0, 4);
+            document.getElementById('accessError').innerHTML = '';
+        });
+        
+        if (isDeviceAlreadyAuthorized()) {
+            accessOverlay.style.display = 'none';
+            mainApp.style.display = 'block';
+            inicializarAppCompleta();
+            setupActivityListeners();
+            return;
+        }
+        
+        const minsBlocked = isBlocked();
+        if (minsBlocked) {
+            document.getElementById('accessError').innerHTML = `<div class="blocked-msg">⛔ ACCESO BLOQUEADO. Espere ${minsBlocked} minutos antes de intentar nuevamente.</div>`;
+            accessBtn.disabled = true;
+            codeInput.disabled = true;
+        }
+        
+        accessBtn.onclick = () => {
+            const code = codeInput.value;
+            if (!code || code.length !== 4) {
+                document.getElementById('accessError').innerHTML = `❌ Ingrese un código válido de 4 caracteres.`;
+                return;
+            }
+            
+            if (autenticarCliente(code)) {
+                document.getElementById('accessError').innerHTML = `<span style="color: #059669;">✅ ¡CÓDIGO CORRECTO! Accediendo...</span>`;
+                setTimeout(() => {
+                    accessOverlay.style.display = 'none';
+                    mainApp.style.display = 'block';
+                    inicializarAppCompleta();
+                    setupActivityListeners();
+                    toast("✅ Acceso concedido. ¡Bienvenido!");
+                }, 500);
+            } else {
+                codeInput.value = '';
+                const stillBlocked = isBlocked();
+                if (stillBlocked) {
+                    accessBtn.disabled = true;
+                    codeInput.disabled = true;
+                }
+            }
+        };
+        
+        codeInput.addEventListener('keypress', (e) => { if(e.key === 'Enter') accessBtn.click(); });
+    }
+    
+    // ============================================================
+    // FUNCIONES PRINCIPALES DE LA APP (TOTALMENTE FUNCIONALES)
+    // ============================================================
+    let productos = JSON.parse(localStorage.getItem('inventario_v3')) || [];
+    let searchTerm = '';
+    const BRECHA_MINIMA = 0.30;
+    
+    function getPreciosProducto(producto) {
+        const tasa_bcv = parseFloat(localStorage.getItem('tasaBCV_confirmada')) || 47.80;
+        const tasa_usdt = parseFloat(localStorage.getItem('tasaUSDT_confirmada')) || 64.00;
+        const costo_producto = producto.costo;
+        const ganancia_usd = producto.ganancia || 0;
+        const precio_base_usd = costo_producto + ganancia_usd;
+        let precio_total_bs = precio_base_usd * tasa_usdt;
+        let precio_venta_bcv_usd = precio_total_bs / tasa_bcv;
+        let brecha_real = (tasa_usdt / tasa_bcv) - 1;
+        let usaBrechaMinima = false;
+        
+        if (brecha_real < BRECHA_MINIMA && brecha_real > 0) {
+            const tasa_usdt_forzada = tasa_bcv * (1 + BRECHA_MINIMA);
+            precio_total_bs = precio_base_usd * tasa_usdt_forzada;
+            precio_venta_bcv_usd = precio_total_bs / tasa_bcv;
+            usaBrechaMinima = true;
+        }
+        
+        return {
+            totalBolivares: Math.round(precio_total_bs * 100) / 100,
+            precioDolarBCV: Math.round(precio_venta_bcv_usd * 100) / 100,
+            precioOfertaUSDT: Math.round(precio_base_usd * 100) / 100,
+            brechaReal: brecha_real,
+            usaBrechaMinima: usaBrechaMinima
+        };
+    }
+    
+    function actualizarUIBrecha(b, u) {
+        const brechaReal = ((parseFloat(u)/parseFloat(b)) - 1) * 100;
+        const displayBrecha = document.getElementById('displayBrecha');
+        const advertenciaBox = document.getElementById('brechaAdvertencia');
+        if (brechaReal < 30 && brechaReal > 0) {
+            displayBrecha.innerHTML = `${brechaReal.toFixed(2)}% <span style="color:#ef4444; font-size:0.7rem;">→ Usando 30% mínimo</span>`;
+            advertenciaBox.style.display = 'block';
+        } else {
+            displayBrecha.innerHTML = `${brechaReal.toFixed(2)}%`;
+            advertenciaBox.style.display = 'none';
+        }
+    }
+    
+    function confirmarTasas() {
+        const b = document.getElementById('tasaBCV').value;
+        const u = document.getElementById('tasaUSDT').value;
+        if(!b || !u || parseFloat(b) <= 0 || parseFloat(u) <= 0) { toast("❌ Tasas inválidas"); return; }
+        const brechaReal = (parseFloat(u)/parseFloat(b)) - 1;
+        if (brechaReal < BRECHA_MINIMA && brechaReal > 0) {
+            toast(`⚠️ Brecha del ${(brechaReal*100).toFixed(2)}% es menor al 30%. Se usará 30% como mínimo.`);
+            const alertaDiv = document.getElementById('alertMinBrecha');
+            alertaDiv.classList.add('show');
+            setTimeout(() => alertaDiv.classList.remove('show'), 3000);
+        }
+        localStorage.setItem('tasaBCV_confirmada', b);
+        localStorage.setItem('tasaUSDT_confirmada', u);
+        actualizarUIBrecha(b, u);
+        renderizar();
+        toast("🚀 Precios Actualizados");
+    }
+    
+    function cargarTasasIniciales() {
+        const b = localStorage.getItem('tasaBCV_confirmada') || "47.80";
+        const u = localStorage.getItem('tasaUSDT_confirmada') || "64.00";
+        document.getElementById('tasaBCV').value = b;
+        document.getElementById('tasaUSDT').value = u;
+        actualizarUIBrecha(b, u);
+    }
+    
+    function guardarProducto() {
+        const id = document.getElementById('editId').value;
+        const n = document.getElementById('pNombre').value;
+        const c = parseFloat(document.getElementById('pCosto').value);
+        let g = parseFloat(document.getElementById('pGanancia').value);
+        if(!n || isNaN(c)) { toast("❌ Nombre y costo son requeridos"); return; }
+        if(isNaN(g)) g = 0;
+        if(id) {
+            const i = productos.findIndex(p => p.id == id);
+            productos[i] = { id: parseInt(id), nombre: n, costo: c, ganancia: g };
+            toast("✏️ Producto actualizado");
+        } else {
+            productos.push({ id: Date.now(), nombre: n, costo: c, ganancia: g });
+            toast("✅ Producto guardado");
+        }
+        limpiarForm();
+        save();
+    }
+    
+    function editar(id) {
+        const p = productos.find(p => p.id === id);
+        document.getElementById('editId').value = p.id;
+        document.getElementById('pNombre').value = p.nombre;
+        document.getElementById('pCosto').value = p.costo;
+        document.getElementById('pGanancia').value = p.ganancia;
+        document.getElementById('btnCancel').style.display = 'block';
+        window.scrollTo({top: 0, behavior: 'smooth'});
+    }
+    
+    function borrar(id) { if(confirm("¿Eliminar producto?")) { productos = productos.filter(p => p.id !== id); save(); toast("🗑️ Producto eliminado"); } }
+    function limpiarForm() { document.getElementById('editId').value = ''; document.getElementById('pNombre').value = ''; document.getElementById('pCosto').value = ''; document.getElementById('pGanancia').value = ''; document.getElementById('btnCancel').style.display = 'none'; }
+    function save() { localStorage.setItem('inventario_v3', JSON.stringify(productos)); renderizar(); }
+    
+    function copiarPortapapeles(nombre, precioOfertaUSDT, precioDolar, precioBs, avisoMinimo) {
+        let texto = `🛍️ *${nombre}*\n\n💵 *Precio en USD (BCV):* $${precioDolar}\n🇻🇪 *Total en Bolívares:* ${precioBs} Bs\n\n🔸 *OFERTA USDT:* ${precioOfertaUSDT} USDT\n`;
+        if (avisoMinimo) texto += `⚠️ *Aplicada brecha mínima del 30%*\n`;
+        texto += `\n📍 *Dirección:* Carrera 13 esquina calle 18, Yaritagua\n📞 *Contacto:* 0412-5278450\n\n⏰ *Válido por 12 horas.*`;
+        navigator.clipboard.writeText(texto).then(() => toast("📋 Copiado"));
+    }
+    
+    function copiarCatalogo() {
+        if(productos.length === 0) { toast("⚠️ No hay productos"); return; }
+        const tasa_bcv = parseFloat(localStorage.getItem('tasaBCV_confirmada')) || 47.80;
+        let texto = `📦 *CATÁLOGO DE PRODUCTOS* 📦\n📅 *Fecha:* ${new Date().toLocaleDateString()}\n💱 *Tasa BCV:* ${tasa_bcv.toFixed(2)} Bs\n━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+        productos.forEach(p => {
+            const precios = getPreciosProducto(p);
+            texto += `⭐ *${p.nombre}*\n   💵 BCV: $${precios.precioDolarBCV.toFixed(2)}\n   🇻🇪 Bs: ${precios.totalBolivares.toLocaleString('es-VE', {minimumFractionDigits:2})}\n   🔸 OFERTA USDT: ${precios.precioOfertaUSDT.toFixed(2)}\n`;
+            if (precios.usaBrechaMinima) texto += `   ⚠️ *Brecha mínima 30%*\n`;
+            texto += `──────────────────────\n`;
+        });
+        texto += `\n📍 *Ubicación:* Yaritagua-Yaracuy, Carrera 13 esq. Calle 18\n📞 *WhatsApp:* 0412-5278450\n\n⏰ *Válido por 12 horas.*`;
+        navigator.clipboard.writeText(texto).then(() => toast("🚀 Catálogo copiado"));
+    }
+    
+    function filterProductsBySearch(products, term) { if (!term.trim()) return products; const lowerTerm = term.toLowerCase().trim(); return products.filter(p => p.nombre.toLowerCase().includes(lowerTerm)); }
+    function updateSearchUI() { const clearBtn = document.getElementById('clearSearchBtn'); const searchStats = document.getElementById('searchStats'); const resultsCountSpan = document.getElementById('resultsCount'); if (searchTerm.length > 0) { clearBtn.style.display = 'flex'; const filtered = filterProductsBySearch(productos, searchTerm); resultsCountSpan.innerText = filtered.length; searchStats.classList.add('active'); } else { clearBtn.style.display = 'none'; searchStats.classList.remove('active'); } }
+    function clearSearch() { document.getElementById('searchInput').value = ''; searchTerm = ''; updateSearchUI(); renderizar(); toast("🔍 Búsqueda limpiada"); }
+    function setupSearch() { const searchInput = document.getElementById('searchInput'); searchInput.addEventListener('input', (e) => { searchTerm = e.target.value; updateSearchUI(); renderizar(); }); searchInput.addEventListener('keydown', (e) => { if (e.key === 'Escape') { clearSearch(); searchInput.blur(); } }); }
+    
+    function renderizar() {
+        const productosFiltrados = filterProductsBySearch(productos, searchTerm);
+        const lista = document.getElementById('listaProductos');
+        if (productos.length === 0) { lista.innerHTML = `<div class="no-results"><span style="font-size: 3rem;">📦</span><br>No hay productos registrados<br><small>Agrega tu primer producto arriba</small></div>`; return; }
+        if (productosFiltrados.length === 0 && searchTerm.trim() !== '') { lista.innerHTML = `<div class="no-results"><span style="font-size: 3rem;">🔍</span><br>No se encontraron productos con "<strong>${escapeHtml(searchTerm)}</strong>"</div>`; return; }
+        lista.innerHTML = '';
+        productosFiltrados.forEach(p => {
+            const precios = getPreciosProducto(p);
+            const precioVentaBS = precios.totalBolivares.toLocaleString('es-VE', {minimumFractionDigits:2, maximumFractionDigits:2});
+            const avisoMinimoHtml = precios.usaBrechaMinima ? '<span style="background:#fee2e2; color:#991b1b; font-size:0.6rem; padding:2px 6px; border-radius:10px; margin-left:6px;">Brecha mínima 30%</span>' : '';
+            lista.innerHTML += `<div class="product-item"><div class="binance-badge">🔸 USDT: ${precios.precioOfertaUSDT.toFixed(2)}</div><div style="font-weight:700; font-size:1.1rem; margin-bottom:4px">${escapeHtml(p.nombre)} ${avisoMinimoHtml}</div><div class="price-tag">$ ${precios.precioDolarBCV.toFixed(2)} <small style="font-size:0.7rem; color:#64748b">(Tasa BCV)</small></div><div style="font-size:0.95rem; color:#1e293b; margin-top:2px">🇻🇪 Total Bs: <b>${precioVentaBS}</b></div><div class="actions"><button class="btn-sm" style="background:var(--copy); color:white" onclick="copiarPortapapeles('${escapeHtml(p.nombre).replace(/'/g, "\\'")}', '${precios.precioOfertaUSDT.toFixed(2)}', '${precios.precioDolarBCV.toFixed(2)}', '${precioVentaBS}', ${precios.usaBrechaMinima})">📋 Copiar</button><button class="btn-sm" style="background:#e2e8f0" onclick="editar(${p.id})">✏️ Editar</button><button class="btn-sm" style="background:#fee2e2; color:red" onclick="borrar(${p.id})">🗑️ Borrar</button></div></div>`;
+        });
+    }
+    
+    function escapeHtml(text) { if (!text) return ''; const div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
+    function descargarBackup() { const data = JSON.stringify(productos); const blob = new Blob([data], {type: 'application/json'}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `respaldo_precios_${new Date().toLocaleDateString()}.json`; a.click(); URL.revokeObjectURL(url); toast("📥 Respaldo descargado"); }
+    function subirBackup(event) { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = (e) => { try { const data = JSON.parse(e.target.result); if (Array.isArray(data)) { productos = data; save(); toast("📤 Respaldo cargado"); } else { toast("❌ Formato inválido"); } } catch(err) { toast("❌ Error al leer"); } document.getElementById('fileInput').value = ''; }; reader.readAsText(file); }
+    function toast(m) { const t = document.getElementById('toast'); t.innerText = m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'), 2000); }
+    
+    function inicializarAppCompleta() {
+        cargarTasasIniciales();
+        setupSearch();
+        renderizar();
+        resetInactivityTimer(); // Iniciar el timer de inactividad al entrar
+    }
+    
+    // INICIAR SISTEMA DE ACCESO
+    initAccessControl();
+</script>
+</body>
+</html>
