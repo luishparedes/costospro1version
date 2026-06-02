@@ -61,6 +61,13 @@
         .error-msg { color: var(--danger); font-size: 0.85rem; margin-top: 12px; min-height: 40px; font-weight: 500; }
         .blocked-msg { color: #991b1b; background: #fee2e2; padding: 8px; border-radius: 12px; font-size: 0.8rem; margin-top: 12px; }
         .footer-note { font-size: 0.65rem; color: #64748b; margin-top: 20px; }
+        
+        /* Bloqueo de seguridad para dominios no autorizados */
+        .blocked-domain-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #7f1a1a;
+            z-index: 10000; display: flex; align-items: center; justify-content: center;
+            color: white; font-size: 2rem; text-align: center; flex-direction: column;
+        }
     </style>
 </head>
 <body>
@@ -139,9 +146,132 @@
 
 <script>
     // ============================================================
+    // SEGURIDAD AVANZADA: ANTI-F12, ANTI-CLON, ANTI-DEBUG
+    // ============================================================
+    (function() {
+        // *** IMPORTANTE: CAMBIE ESTO POR SU DOMINIO REAL ***
+        const MI_DOMINIO_PERMITIDO = "costos.calculadoramagica.lat"; // <--- REEMPLAZAR AQUÍ
+        
+        // 1. Verificación estricta del dominio
+        function validarDominio() {
+            let hostname = window.location.hostname;
+            // Quita www. si existe
+            if (hostname.startsWith('www.')) hostname = hostname.substring(4);
+            
+            // Permite localhost solo para pruebas (opcional, comente si no quiere localhost)
+            // Si NO quiere permitir localhost, elimine la siguiente línea
+            if (hostname === 'localhost' || hostname === '127.0.0.1') return true; 
+            
+            if (hostname !== MI_DOMINIO_PERMITIDO) {
+                // Bloqueo total: Limpia el HTML y muestra pantalla de bloqueo
+                document.body.innerHTML = '<div class="blocked-domain-overlay"><span style="font-size: 80px;">⛔</span><h1>Acceso No Autorizado</h1><p>Este sistema está protegido para uso exclusivo en su dominio autorizado.</p><p>Dominio detectado: ' + hostname + '</p></div>';
+                document.body.style.background = "#000";
+                // Bucle infinito para colapsar la consola si intentan debuggear
+                setInterval(() => { while(true) { console.error("BLOQUEADO POR SEGURIDAD"); } }, 100);
+                throw new Error("Dominio no autorizado");
+            }
+            return true;
+        }
+        
+        // 2. Anti-F12 y Anti-Inspección (Congelamiento)
+        function bloqueoInspector() {
+            // Detecta teclas de desarrollador
+            document.addEventListener('keydown', function(e) {
+                // F12, Ctrl+Shift+I, Ctrl+Shift+C, Ctrl+U, Ctrl+S, Ctrl+Shift+J
+                if (e.key === 'F12' || 
+                    (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'C' || e.key === 'J')) ||
+                    (e.ctrlKey && (e.key === 'u' || e.key === 's'))) {
+                    e.preventDefault();
+                    entrarModoBloqueo();
+                }
+            });
+            
+            // Detecta click derecho
+            document.addEventListener('contextmenu', function(e) {
+                e.preventDefault();
+                entrarModoBloqueo();
+                return false;
+            });
+            
+            // Detecta si intentan abrir la consola después de cargar
+            let devtools = /./;
+            devtools.toString = function() {
+                entrarModoBloqueo();
+                return '';
+            }
+            setInterval(() => {
+                console.log(devtools);
+            }, 1000);
+        }
+        
+        function entrarModoBloqueo() {
+            // Congela la interfaz y colapsa la lógica
+            document.body.style.pointerEvents = 'none';
+            document.body.style.opacity = '0.5';
+            // Bucle infinito asíncrono para consumir recursos y evitar lectura de código
+            function freezeLoop() {
+                let a = 0;
+                while(true) {
+                    a += Math.random();
+                    console.error("PROTECCIÓN ACTIVADA - SISTEMA BLOQUEADO");
+                    if(a > 9999999999) a = 0;
+                }
+            }
+            setTimeout(freezeLoop, 10);
+            // Muestra advertencia
+            let msgDiv = document.createElement('div');
+            msgDiv.style.position = 'fixed';
+            msgDiv.style.top = '0';
+            msgDiv.style.left = '0';
+            msgDiv.style.width = '100%';
+            msgDiv.style.background = 'red';
+            msgDiv.style.color = 'white';
+            msgDiv.style.padding = '20px';
+            msgDiv.style.zIndex = '99999';
+            msgDiv.style.textAlign = 'center';
+            msgDiv.innerHTML = '🔒 SISTEMA BLOQUEADO POR SEGURIDAD - No está permitido inspeccionar el código.';
+            document.body.appendChild(msgDiv);
+        }
+        
+        // 3. Anti-Debugger Avanzado
+        function antiDebugger() {
+            setInterval(function() {
+                // Verifica si la consola está abierta midiendo tiempos de ejecución
+                const start = performance.now();
+                debugger; // Si la consola está abierta, se pausa aquí
+                const end = performance.now();
+                if (end - start > 100) {
+                    // Detectado debugger, entra en bucle destructivo
+                    entrarModoBloqueo();
+                }
+            }, 1000);
+            
+            // Evita que sobrescriban funciones de debug
+            const originalConsole = window.console;
+            window.console = {
+                ...originalConsole,
+                log: function() {},
+                info: function() {},
+                warn: function() {},
+                error: function() {
+                    originalConsole.error.apply(originalConsole, arguments);
+                }
+            };
+        }
+        
+        // Ejecutar todas las protecciones
+        try {
+            if (!validarDominio()) throw new Error("Domain fail");
+            bloqueoInspector();
+            antiDebugger();
+        } catch(e) {
+            document.body.innerHTML = '<div class="blocked-domain-overlay"><h1>🔒 Entorno no seguro</h1><p>No se puede ejecutar la aplicación.</p></div>';
+        }
+    })();
+
+    // ============================================================
     // GESTIÓN DE CÓDIGOS AUTORIZADOS (ADMINISTRABLE EN LOCALSTORAGE)
     // ============================================================
-    // Códigos por defecto (se cargan si no existen en localStorage)
     const DEFAULT_CODES = ["ASD4", "RTY7", "LMN2", "QWE5", "ZXC8", "BNM3", "FGH6", "JKL9", "VBN1", "MNB2"];
     
     function getAuthorizedCodes() {
@@ -152,7 +282,6 @@
                 if (Array.isArray(parsed) && parsed.length > 0) {
                     return parsed;
                 } else {
-                    // Si el array está vacío o es inválido, retornamos los de defecto
                     localStorage.setItem('admin_codes', JSON.stringify(DEFAULT_CODES));
                     return DEFAULT_CODES;
                 }
@@ -170,12 +299,6 @@
         localStorage.setItem('admin_codes', JSON.stringify(codes));
     }
     
-    // Nota: Como administrador, para eliminar un código, puedes hacer desde la consola:
-    // let codes = JSON.parse(localStorage.getItem('admin_codes'));
-    // let newCodes = codes.filter(c => c !== "CODIGO_A_ELIMINAR");
-    // localStorage.setItem('admin_codes', JSON.stringify(newCodes));
-    // Esto invalidará inmediatamente ese código para futuros accesos.
-    
     // ============================================================
     // SISTEMA DE ACCESO SEGURO CON CIERRE POR INACTIVIDAD
     // ============================================================
@@ -190,7 +313,6 @@
         if (inactivityTimer) {
             clearTimeout(inactivityTimer);
         }
-        // Solo reiniciamos el timer si la aplicación principal está visible
         const mainApp = document.getElementById('mainApp');
         if (mainApp && mainApp.style.display === 'block') {
             inactivityTimer = setTimeout(closeSessionByInactivity, INACTIVITY_LIMIT);
@@ -198,16 +320,11 @@
     }
     
     function closeSessionByInactivity() {
-        // Limpiar datos de sesión local (pero no el código recordado para la próxima)
-        // Esto fuerza a volver a la pantalla de acceso
         const accessOverlay = document.getElementById('accessOverlay');
         const mainApp = document.getElementById('mainApp');
         if (mainApp && mainApp.style.display === 'block') {
-            // No eliminamos el código de localStorage, así se recuerda
-            // Solo ocultamos la app y mostramos el overlay de acceso
             mainApp.style.display = 'none';
             accessOverlay.style.display = 'flex';
-            // Limpiamos errores y habilitamos inputs
             const errorDiv = document.getElementById('accessError');
             if (errorDiv) errorDiv.innerHTML = '';
             const accessBtn = document.getElementById('accessBtn');
@@ -215,7 +332,6 @@
             if (accessBtn) accessBtn.disabled = false;
             if (codeInput) {
                 codeInput.disabled = false;
-                // Precargamos el código guardado si existe
                 const savedUserCode = localStorage.getItem(STORAGE_AUTH_CODE);
                 if (savedUserCode) {
                     codeInput.value = savedUserCode;
@@ -288,12 +404,10 @@
         const savedCode = localStorage.getItem(STORAGE_AUTH_CODE);
         const currentFinger = getDeviceFingerprint();
         if (savedFinger && savedCode && savedFinger === currentFinger) {
-            // Verificar que el código aún esté en la lista autorizada (admin puede haberlo eliminado)
             const authorizedCodes = getAuthorizedCodes();
             if (authorizedCodes.includes(savedCode)) {
                 return true;
             } else {
-                // El código ya no es válido, limpiar sesión
                 localStorage.removeItem(STORAGE_AUTH_DEVICE);
                 localStorage.removeItem(STORAGE_AUTH_CODE);
                 return false;
@@ -353,7 +467,6 @@
         const accessBtn = document.getElementById('accessBtn');
         const codeInput = document.getElementById('accessCodeInput');
         
-        // Precargar código si ya existe una sesión previa o código recordado
         const savedUserCode = localStorage.getItem(STORAGE_AUTH_CODE);
         if (savedUserCode) {
             codeInput.value = savedUserCode;
@@ -563,10 +676,9 @@
         cargarTasasIniciales();
         setupSearch();
         renderizar();
-        resetInactivityTimer(); // Iniciar el timer de inactividad al entrar
+        resetInactivityTimer();
     }
     
-    // INICIAR SISTEMA DE ACCESO
     initAccessControl();
 </script>
 </body>
